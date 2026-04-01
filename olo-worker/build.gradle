@@ -1,0 +1,118 @@
+/*
+ * Copyright (c) 2026 Olo Labs. All rights reserved.
+ */
+
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'org.olo'
+version = '1.0.0-SNAPSHOT'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(':olo-annotations')
+    implementation project(':olo-worker-protocol')
+    implementation project(':olo-worker-bootstrap-loader')
+    implementation project(':olo-worker-bootstrap-runtime')
+    implementation project(':olo-worker-configuration')
+    implementation project(':olo-worker-db')
+    implementation project(':olo-worker-cache')
+    implementation project(':olo-execution-tree')
+    implementation project(':olo-worker-features')
+    implementation project(':olo-worker-input')
+    implementation project(':olo-worker-plugin')
+    implementation project(':olo-worker-ledger')
+    implementation project(':olo-workflow-input')
+    implementation project(':olo-worker-variable-engine')
+    implementation 'io.temporal:temporal-sdk:1.24.1'
+    runtimeOnly 'org.slf4j:slf4j-simple:2.0.9'
+    testImplementation project(':olo-worker-ledger')
+    testImplementation 'io.temporal:temporal-testing:1.24.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testImplementation 'io.lettuce:lettuce-core:7.4.0.RELEASE'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+application {
+    mainClass = 'org.olo.worker.OloWorkerApplication'
+}
+
+// So that Path.of("config") finds repo root's config/ (default.json, olo-chat-queue-ollama.json, etc.)
+tasks.named('run') {
+    workingDir = rootProject.projectDir
+    // Use a PostgreSQL-supported timezone just for this Gradle run
+    jvmArgs '-Duser.timezone=Asia/Kolkata'
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+    // Ensure Postgres sees a supported timezone during all test tasks (incl. integration ones)
+    jvmArgs '-Duser.timezone=Asia/Kolkata'
+}
+
+tasks.register('bootstrapDump', Test) {
+    group = 'verification'
+    description = 'Integration: bootstrap and dump global context JSON.'
+    // Use the standard test outputs/classpath
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'integration'
+    }
+    // Narrow to the BootstrapGlobalContextDumpTest class
+    filter {
+        includeTestsMatching 'org.olo.worker.BootstrapGlobalContextDumpTest'
+    }
+}
+
+tasks.register('refreshData', Test) {
+    group = 'verification'
+    description = 'Integration: drop DB tables and delete Redis keys.'
+    // Use the standard test outputs/classpath
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'integration'
+    }
+    // Narrow to the FreshIntegrationCleanupTest class
+    filter {
+        includeTestsMatching 'org.olo.worker.FreshIntegrationCleanupTest'
+    }
+}
+
+tasks.register('workflowInputDebug', Test) {
+    group = 'verification'
+    description = 'Integration: load workflow input from configuration/debug/workflow/, start workflow, dump input+LocalContext when env set.'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'integration'
+    }
+    filter {
+        includeTestsMatching 'org.olo.worker.WorkflowInputDebugIntegrationTest'
+    }
+}
+
+tasks.register('consensusUseCase', Test) {
+    group = 'verification'
+    description = 'Integration: run Multi-Model Consensus use case (PLANNER + architect/critic) against Temporal.'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'integration'
+    }
+    filter {
+        includeTestsMatching 'org.olo.worker.ConsensusUseCaseIntegrationTest'
+    }
+}
+

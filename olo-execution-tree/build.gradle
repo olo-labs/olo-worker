@@ -1,0 +1,14 @@
+/*
+ * Copyright (c) 2026 Olo Labs. All rights reserved.
+ */
+
+dependencies {
+  implementation project(":olo-worker-configuration")
+
+  implementation "com.fasterxml.jackson.core:jackson-databind:2.17.2"
+  implementation "org.slf4j:slf4j-api:2.0.16"
+
+  testImplementation "org.junit.jupiter:junit-jupiter:5.11.0"
+  testRuntimeOnly "org.junit.platform:junit-platform-launcher:1.11.0"
+  testRuntimeOnly "org.slf4j:slf4j-simple:2.0.16"
+}

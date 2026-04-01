@@ -1,0 +1,72 @@
+/*
+ * Copyright (c) 2026 Olo Labs. All rights reserved.
+ */
+
+package org.olo.worker.engine.node;
+
+import org.olo.executiontree.scope.FeatureDef;
+import org.olo.executiontree.scope.Scope;
+import org.olo.executiontree.tree.ExecutionTreeNode;
+import org.olo.features.FeatureAttachmentResolver;
+import org.olo.features.FeatureRegistry;
+import org.olo.features.ResolvedPrePost;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Single responsibility: resolve the effective pre/post feature list for a node.
+ * Delegates to {@link FeatureAttachmentResolver} with scope feature names derived from pipeline scope.
+ */
+public final class FeatureResolver {
+
+    /**
+     * Resolves pre/post feature names for the given node.
+     *
+     * @param node      execution tree node
+     * @param queueName task queue name (e.g. for -debug auto-attach)
+     * @param scope     pipeline scope (plugins, features)
+     * @param registry  feature registry
+     * @return resolved pre and post feature name lists
+     */
+    public static ResolvedPrePost resolve(
+            ExecutionTreeNode node,
+            String queueName,
+            Scope scope,
+            FeatureRegistry registry) {
+        Objects.requireNonNull(node, "node");
+        Objects.requireNonNull(registry, "registry");
+        List<String> scopeFeatureNames = getScopeFeatureNames(scope);
+        // When run ledger is enabled, ledger-node is registered but may not be in pipeline scope; attach it so olo_run_node is populated.
+        if (registry.get("ledger-node") != null && !scopeFeatureNames.contains("ledger-node")) {
+            scopeFeatureNames = new ArrayList<>(scopeFeatureNames);
+            scopeFeatureNames.add("ledger-node");
+        }
+        // When execution event sink is enabled, execution-events is registered but may not be in pipeline scope; attach it so planner/tool/model steps are emitted for chat UI.
+        if (registry.get("execution-events") != null && !scopeFeatureNames.contains("execution-events")) {
+            scopeFeatureNames = new ArrayList<>(scopeFeatureNames);
+            scopeFeatureNames.add("execution-events");
+        }
+        // Ensure debug is included for -debug queues (static and dynamically created nodes get debug pre/post).
+        if (queueName != null && queueName.endsWith("-debug") && !scopeFeatureNames.contains("debug")) {
+            scopeFeatureNames = new ArrayList<>(scopeFeatureNames);
+            scopeFeatureNames.add("debug");
+        }
+        return FeatureAttachmentResolver.resolve(node, queueName, scopeFeatureNames, registry);
+    }
+
+    private static List<String> getScopeFeatureNames(Scope scope) {
+        List<String> names = new ArrayList<>();
+        if (scope == null || scope.getFeatures() == null) return names;
+        for (FeatureDef f : scope.getFeatures()) {
+            if (f != null && f.getId() != null && !f.getId().isBlank()) {
+                names.add(f.getId().trim());
+            }
+        }
+        return names;
+    }
+
+    private FeatureResolver() {
+    }
+}

@@ -1,0 +1,22 @@
+/*
+ * Copyright (c) 2026 Olo Labs. All rights reserved.
+ */
+
+rootProject.name = "olo-worker"
+
+include("olo-annotations")
+include("olo-worker-configuration")
+include("olo-worker-db")
+include("olo-worker-cache")
+include("olo-workflow-input")
+include("olo-worker-bootstrap-loader")
+include("olo-worker-bootstrap-runtime")
+include("olo-execution-tree")
+include("olo-worker-variable-engine")
+include("olo-worker-protocol")
+include("olo-worker-features")
+include("olo-worker-input")
+include("olo-worker-plugin")
+include("olo-worker-ledger")
+include("olo-worker")
+

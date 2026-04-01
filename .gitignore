@@ -1,0 +1,18 @@
+# Copyright (c) 2026 Olo Labs. All rights reserved.
+
+# Gradle
+.gradle/
+build/
+
+# Maven (leftovers)
+target/
+
+# IntelliJ / VSCode
+.idea/
+*.iml
+
+# OS
+Thumbs.db
+
+
+/.vscode/*

@@ -1,0 +1,205 @@
+{
+  "globalConfig" : {
+    "olo.region" : "default,us-east,eu-west",
+    "app.timeoutSecs" : "30",
+    "app.theme" : "light",
+    "feature.beta" : "false"
+  },
+  "primaryRegion" : "default",
+  "servedRegions" : [ "default", "us-east" ],
+  "globalCapabilities" : {
+    "plugins" : [ ],
+    "features" : [ ]
+  },
+  "regionCapabilities" : {
+    "default" : {
+      "plugins" : [ ],
+      "features" : [ ]
+    },
+    "us-east" : {
+      "plugins" : [ ],
+      "features" : [ ]
+    }
+  },
+  "tenantCapabilities" : {
+    "tenant-b" : {
+      "plugins" : [ ],
+      "features" : [ ]
+    },
+    "tenant-a" : {
+      "plugins" : [ ],
+      "features" : [ ]
+    },
+    "tenant-c" : {
+      "features" : [ ],
+      "plugins" : [ ]
+    }
+  },
+  "tenantToRegion" : {
+    "tenant-b" : "us-east",
+    "tenant-a" : "default",
+    "tenant-c" : "eu-west"
+  },
+  "snapshotsByRegion" : {
+    "default" : {
+      "region" : "default",
+      "snapshotId" : "default:1773400993363",
+      "coreVersion" : 1773400993125,
+      "pipelinesVersion" : 1773400993363,
+      "connectionsVersion" : 0,
+      "regionalSettingsVersion" : 1773400993363,
+      "coreLastUpdated" : "2026-03-13T11:23:13.125987600Z",
+      "coreGlobalConfigKeys" : [ "app.theme", "app.timeoutSecs", "feature.beta", "olo.region" ],
+      "coreRegionConfigKeys" : [ ],
+      "coreTenantIds" : [ ],
+      "coreResourceIds" : [ ],
+      "pipelineIds" : [ "olo.default.default-pipeline", "olo.default.default-pipeline-2" ],
+      "connectionIds" : [ ]
+    },
+    "us-east" : {
+      "region" : "us-east",
+      "snapshotId" : "us-east:1773400993739",
+      "coreVersion" : 1773400993125,
+      "pipelinesVersion" : 1773400993739,
+      "connectionsVersion" : 0,
+      "regionalSettingsVersion" : 1773400993739,
+      "coreLastUpdated" : "2026-03-13T11:23:13.125987600Z",
+      "coreGlobalConfigKeys" : [ "app.theme", "app.timeoutSecs", "feature.beta", "olo.region" ],
+      "coreRegionConfigKeys" : [ ],
+      "coreTenantIds" : [ ],
+      "coreResourceIds" : [ ],
+      "pipelineIds" : [ "olo.us-east.us-east-pipeline-1", "olo.us-east.us-east-pipeline-2" ],
+      "connectionIds" : [ ]
+    }
+  },
+  "globalContextTree" : {
+    "default" : {
+      "olo.default.default-pipeline" : {
+        "pipelineId" : "olo.default.default-pipeline",
+        "version" : 1,
+        "checksum" : "d38dde49c047f8dbaddab22d93f410b13f2cdcf90039955cf9f442b88a0842a8",
+        "compiledPipeline" : {
+          "id" : "olo.default.default-pipeline",
+          "inputContract" : {
+            "parameters" : [ ],
+            "strict" : false
+          },
+          "outputContract" : {
+            "parameters" : [ ]
+          },
+          "resultMapping" : { },
+          "executionType" : "SYNC",
+          "variableRegistry" : [ ],
+          "scope" : {
+            "plugins" : {
+              "features" : [ ],
+              "plugins" : [ ]
+            },
+            "features" : [ ]
+          },
+          "executionTree" : {
+            "id" : "root",
+            "type" : "SEQUENCE",
+            "name" : "Pipeline",
+            "allowedTenantIds" : [ "tenant-a" ]
+          }
+        }
+      },
+      "olo.default.default-pipeline-2" : {
+        "pipelineId" : "olo.default.default-pipeline-2",
+        "version" : 1,
+        "checksum" : "3a7e7092e8a867e48a4f74bb815563b2bfc18028ec93dad5ef3aa7c638fe1899",
+        "compiledPipeline" : {
+          "id" : "olo.default.default-pipeline-2",
+          "inputContract" : {
+            "parameters" : [ ],
+            "strict" : false
+          },
+          "outputContract" : {
+            "parameters" : [ ]
+          },
+          "resultMapping" : { },
+          "executionType" : "SYNC",
+          "variableRegistry" : [ ],
+          "scope" : {
+            "plugins" : {
+              "features" : [ ],
+              "plugins" : [ ]
+            },
+            "features" : [ ]
+          },
+          "executionTree" : {
+            "id" : "root",
+            "type" : "SEQUENCE",
+            "name" : "Pipeline2",
+            "allowedTenantIds" : [ "tenant-a" ]
+          }
+        }
+      }
+    },
+    "us-east" : {
+      "olo.us-east.us-east-pipeline-2" : {
+        "pipelineId" : "olo.us-east.us-east-pipeline-2",
+        "version" : 1,
+        "checksum" : "44018f79d0fa2336aab41eb13dc0866fab5e2f3d36eeae2c7d9e7e3d89c16df8",
+        "compiledPipeline" : {
+          "id" : "olo.us-east.us-east-pipeline-2",
+          "inputContract" : {
+            "parameters" : [ ],
+            "strict" : false
+          },
+          "outputContract" : {
+            "parameters" : [ ]
+          },
+          "resultMapping" : { },
+          "executionType" : "SYNC",
+          "variableRegistry" : [ ],
+          "scope" : {
+            "plugins" : {
+              "features" : [ ],
+              "plugins" : [ ]
+            },
+            "features" : [ ]
+          },
+          "executionTree" : {
+            "id" : "root",
+            "type" : "SEQUENCE",
+            "name" : "UsEast2",
+            "allowedTenantIds" : [ "tenant-b" ]
+          }
+        }
+      },
+      "olo.us-east.us-east-pipeline-1" : {
+        "pipelineId" : "olo.us-east.us-east-pipeline-1",
+        "version" : 1,
+        "checksum" : "7e003964f0ebfd690f87b817d95673ffc35d6533f7159d1bb3c9de9db05cde70",
+        "compiledPipeline" : {
+          "id" : "olo.us-east.us-east-pipeline-1",
+          "inputContract" : {
+            "parameters" : [ ],
+            "strict" : false
+          },
+          "outputContract" : {
+            "parameters" : [ ]
+          },
+          "resultMapping" : { },
+          "executionType" : "SYNC",
+          "variableRegistry" : [ ],
+          "scope" : {
+            "plugins" : {
+              "features" : [ ],
+              "plugins" : [ ]
+            },
+            "features" : [ ]
+          },
+          "executionTree" : {
+            "id" : "root",
+            "type" : "SEQUENCE",
+            "name" : "UsEast1",
+            "allowedTenantIds" : [ "tenant-b" ]
+          }
+        }
+      }
+    }
+  }
+}

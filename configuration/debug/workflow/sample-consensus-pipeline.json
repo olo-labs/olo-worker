@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "inputs": [
+    {
+      "name": "user_query",
+      "type": "STRING",
+      "storage": { "mode": "LOCAL" },
+      "value": "Design a fault-tolerant microservice architecture for a payment service."
+    }
+  ],
+  "context": {
+    "tenantId": "tenant-a",
+    "sessionId": "consensus-session-1"
+  },
+  "routing": {
+    "pipeline": "olo.default.consensus-pipeline",
+    "transactionType": "QUESTION_ANSWER",
+    "transactionId": "consensus-txn-1"
+  },
+  "metadata": {
+    "ragTag": null,
+    "timestamp": 0
+  }
+}
