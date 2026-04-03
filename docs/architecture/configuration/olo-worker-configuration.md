@@ -13,15 +13,15 @@ This module **loads configuration during worker bootstrap**, maintains an **immu
  (admin config DB)
         │
         ▼
- Admin Service
-ConfigSnapshotBuilder
+ Admin Service (or Bootstrap seed path when DB + ports registered)
+ConfigSnapshotBuilder / PipelineSectionBuilder
         │
         ▼
  Redis Snapshot
-olo:configuration:* keys
+<root>:config:* keys (default root "olo" → e.g. olo:config:meta)
         │
         ▼
- Worker Bootstrap
+ Worker Bootstrap (Bootstrap.run())
 defaults → env → snapshot
         │
         ▼
@@ -50,11 +50,11 @@ The documentation is split into separate documents for maintainability:
 
 ## Design principles
 
-- **Workers never read configuration from the database**
-- **Configuration is distributed as Redis snapshots**
-- **Workers keep an immutable in-memory snapshot**
-- **Snapshot refresh is incremental and safe**
-- **Admin service is the single configuration writer**
+- **Workers do not read configuration from the database during workflow execution** (only in-memory **`ConfigurationProvider`**).
+- **Bootstrap** may use DB **once at startup** to seed or backfill Redis when the registered ports and DB are present.
+- **Configuration is distributed as Redis snapshots** for runtime consistency across workers.
+- **Workers keep an immutable in-memory snapshot** (atomically replaced on refresh).
+- **Admin service** (or controlled bootstrap) **writes** snapshots; workers **read** Redis and refresh on version change.
 
 ---
 
@@ -63,9 +63,9 @@ The documentation is split into separate documents for maintainability:
 This architecture ensures:
 
 - **Consistent configuration** across all workers
-- **Zero database load** from workers
-- **Fast configuration reads** during workflow execution
-- **Safe incremental configuration updates**
+- **No database reads for config on the workflow hot path** (bootstrap may touch DB to seed Redis or apply schema)
+- **Fast configuration reads** during workflow execution (in-memory snapshot)
+- **Safe configuration updates** via Redis snapshot versioning and refresh
 
 ---
 

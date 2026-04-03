@@ -24,6 +24,9 @@ final class PlannerCreatorSteps {
     private PlannerCreatorSteps() {
     }
 
+  /** Stable variable that always holds the latest step's `responseText`. */
+  private static final String LAST_RESPONSE_VAR = "__planner_last_response";
+
     static List<NodeSpec> nodeSpecsFromCreatorSteps(List<Map<String, Object>> steps) {
         List<NodeSpec> specs = new ArrayList<>();
         for (int i = 0; i < steps.size(); i++) {
@@ -35,7 +38,12 @@ final class PlannerCreatorSteps {
             String promptVar = "__planner_step_" + i + "_prompt";
             String responseVar = "__planner_step_" + i + "_response";
             List<ParameterMapping> inputMappings = List.of(new ParameterMapping("prompt", promptVar));
-            List<ParameterMapping> outputMappings = List.of(new ParameterMapping("responseText", responseVar));
+            // Also write every step's response into a stable "last response" variable so resultMapping
+            // doesn't depend on internal step indexes changing over time.
+            List<ParameterMapping> outputMappings = List.of(
+                    new ParameterMapping("responseText", responseVar),
+                    new ParameterMapping("responseText", LAST_RESPONSE_VAR)
+            );
             specs.add(NodeSpec.plugin("step-" + i + "-" + pluginRef, pluginRef, inputMappings, outputMappings));
         }
         return specs;
@@ -55,7 +63,10 @@ final class PlannerCreatorSteps {
             String promptVar = "__planner_step_" + i + "_prompt";
             String responseVar = "__planner_step_" + i + "_response";
             List<ParameterMapping> inputMappings = List.of(new ParameterMapping("prompt", promptVar));
-            List<ParameterMapping> outputMappings = List.of(new ParameterMapping("responseText", responseVar));
+            List<ParameterMapping> outputMappings = List.of(
+                    new ParameterMapping("responseText", responseVar),
+                    new ParameterMapping("responseText", LAST_RESPONSE_VAR)
+            );
             ExecutionTreeNode child = new ExecutionTreeNode(
                     UUID.randomUUID().toString(),
                     "step-" + i + "-" + pluginRef,

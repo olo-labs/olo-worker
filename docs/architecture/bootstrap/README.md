@@ -2,16 +2,27 @@
 
 # Olo Bootstrap Architecture
 
-This folder documents how the Olo worker **bootstraps** itself: where plugins and features are registered, how configuration is loaded, and how the runtime is wired before Temporal (or a local runtime) starts.
+This folder documents how the Olo worker **bootstraps** itself: configuration loading, global execution context, plugin-related contracts, and how work is wired before Temporal starts.
 
-## Conceptual split: Loader vs Runtime
+## Current worker entry (what `main` runs)
+
+The **olo-worker** application (`org.olo.worker.OloWorkerApplication`) uses **`org.olo.configuration.Bootstrap.run()`** from **olo-worker-configuration** — not `BootstrapLoader.initialize()`. Sequence:
+
+1. **Ports** — `DbPortRegistrar` / `CachePortRegistrar` register JDBC and Redis snapshot factories (and related ports) so bootstrap can use DB and Redis.
+2. **`Bootstrap.run()`** — defaults → env → optional Redis snapshot wait/load (and optional DB-assisted snapshot build or pipeline backfill when Redis/DB are configured); installs **`ConfigurationProvider`**; optional refresh and tenant-region schedulers.
+3. **`GlobalContextProvider.getGlobalContext()`** — lazy **`GlobalContext`** (`GlobalContextImpl`) backed by **`ConfigurationProvider`**, **`TenantRegionResolver`**, and **`ExecutionTreeRegistry`** (compiled pipelines per region).
+4. **Temporal** — task queues are derived from pipeline IDs in the loaded snapshot (e.g. `olo.<region>.<pipeline>`); one Temporal `Worker` per queue.
+
+Execution-time reads use **in-memory config and registries** only; no per-request Redis or DB for configuration.
+
+## Conceptual split: phased loader vs runtime (library modules)
 
 | Module | Role |
 |--------|------|
-| **olo-worker-bootstrap-loader** | **Startup wiring.** Runs once at worker start. Handles environment resolution, configuration loading, descriptor discovery, plugin/feature registration, pipeline loading, registry wiring, validation. **Output:** `WorkerRuntime`. Entry: `BootstrapLoader.initialize()`. |
-| **olo-worker-bootstrap-runtime** | **Execution infrastructure.** Contains runtime service contracts used during execution (not startup): `PluginExecutorFactory`, `FeatureRuntime`, `EventBus`, `ConnectionResolver`, `SecretResolver`, `ResourceCleanup`. These services live for the lifetime of the worker and are exposed via `WorkerRuntime`. |
+| **olo-worker-bootstrap-loader** | **Phased orchestration and global context types.** `BootstrapLoader.initialize(contributors)` → `WorkerRuntime`; `GlobalContext`, `LocalContext`, `ExecutionTreeRegistry`. **Not invoked from `OloWorkerApplication.main` today** — useful for tests (`bootstrapDump`), extensions, and future wiring. |
+| **olo-worker-bootstrap-runtime** | **Execution infrastructure contracts:** `WorkerRuntime`, `ServiceRegistry`, `PluginExecutorFactory`, `EventBus`, etc. Consumed if you build a runtime via `BootstrapLoader`; the current `main` wires plugins via classpath (`DefaultPluginExecutorFactory`) instead. |
 
-Flow: `BootstrapLoader.initialize()` → `WorkerRuntime` (with plugins, features, events, connectionResolver, secretResolver, resourceCleanup) → Temporal workers start using the runtime.
+For the **live process**, treat **`Bootstrap.run()` + `GlobalContext`** as the authoritative bootstrap path; the loader/runtime modules supply **shared types** (`GlobalContext`, execution tree registry) and an optional **phased** startup model.
 
 ## Documents
 
@@ -26,6 +37,7 @@ Flow: `BootstrapLoader.initialize()` → `WorkerRuntime` (with plugins, features
 - **`olo-worker-bootstrap-loader`** — `BootstrapLoader`, `BootstrapOrchestrator`, `BootstrapServiceRegistry`, `BootstrapPhase`, `BootstrapContributor`, phases and registry. Depends on `olo-worker-bootstrap-runtime`.
 - **`olo-worker-bootstrap-runtime`** — `WorkerRuntime`, `WorkerRuntimeBuilder`, `ServiceRegistry`, and service interfaces: `PluginExecutorFactory`, `FeatureRuntime`, `EventBus`, `ConnectionResolver`, `SecretResolver`, `ResourceCleanup`.
 
-## Key rule
+## Key rules
 
-**All runtime wiring happens during bootstrap (loader).** Runtime must not perform discovery or scanning; only registry lookup and direct calls. Execution infrastructure lives in the runtime module and is used for the lifetime of the worker.
+- **Configuration and compiled pipelines** are fixed at bootstrap (`Bootstrap.run()` and execution tree rebuild on snapshot change). Workers do not reload pipeline definitions from Redis on every activity call.
+- **Phased loader** (`BootstrapLoader`) is the right place for **descriptor-driven** registration when you adopt that path; the current **`main`** keeps wiring minimal and relies on **`Bootstrap.run()`** plus **`GlobalContext`**.

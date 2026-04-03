@@ -8,7 +8,7 @@ Part of the [olo-worker-configuration](olo-worker-configuration.md) documentatio
 
 ## Region model (introduced first)
 
-**Tenants belong to a region.** Workers run per region (or serve a comma-separated list of regions). Workers load **only their region’s snapshot** from Redis. Pipelines and connections are **region-scoped** (e.g. `olo:config:pipelines:us-east`), while core config is global (`olo:config:core`). This is why **TenantRegionResolver.getRegion(tenantId)** is used before config access—to know which region’s snapshot to use. Region list is configured via **`olo.regions`** (preferred) or legacy **`olo.region`** (defaults + ENV) and optionally via DB table `olo_configuration_region` (tenant → region mapping).
+**Tenants belong to a region.** Workers run one region per process. Workers load **only their region’s snapshot** from Redis. Pipelines and connections are **region-scoped** (e.g. `olo:config:pipelines:us-east`), while core config is global (`olo:config:core`). This is why **TenantRegionResolver.getRegion(tenantId)** is used before config access—to know which region’s snapshot to use. Region is configured via **`olo.region`** (defaults + ENV) and optionally via DB table `olo_configuration_region` (tenant → region mapping).
 
 ---
 
@@ -47,11 +47,11 @@ The rest of the OLO platform (e.g. `olo-worker`) depends on this module and uses
                Worker components
 ```
 
-**Key rule:** **Workers never touch DB.** Only **defaults → env → Redis snapshot**. Admin service builds snapshot from DB and writes to Redis; workers only read from Redis.
+**Key rule:** **Workers do not read configuration from the database during workflow execution.** At **bootstrap**, **`Bootstrap.run()`** uses **defaults → env → Redis snapshot**; if Redis is configured but empty, **DB may be used once** to build or backfill Redis (e.g. **`ConfigSnapshotBuilder`**, **`PipelineSectionBuilder`**) when those port implementations are registered. After bootstrap, **only** in-memory **`ConfigurationProvider`** state is used for runs.
 
-- **Workers**: defaults → env → Redis snapshot. If Redis is configured, the worker **never** falls back to defaults + env only; Bootstrap waits until Redis is reachable and a valid snapshot exists (avoids config drift across workers). At **runtime**, if Redis is unavailable during refresh, workers keep the current snapshot and retry next cycle.
-- **Admin service**: DB → build snapshot (**ConfigSnapshotBuilder**) → write Redis snapshot → increment version. Workers see the change on next refresh.
-- **Worker runtime**: uses only `ConfigurationProvider.get()` / `require()`, `config.forTenant(tenantId)`, and `TenantRegionResolver.getRegion(tenantId)`. No Redis, no DB during execution. If the tenant’s region is not served by this worker, reject the request or route to the correct region to avoid wrong configuration and cross-region bugs. See [06_operational_guidelines](06_operational_guidelines.md#region-mismatch-protection).
+- **Workers**: defaults → env → Redis snapshot. If Redis is configured, Bootstrap waits until Redis is reachable and a valid snapshot exists (or can be built from DB when implemented). At **runtime**, if Redis is unavailable during refresh, workers keep the current snapshot and retry next cycle.
+- **Admin service** (or bootstrap seed path): DB → build snapshot (**ConfigSnapshotBuilder**) → write Redis snapshot → increment version. Workers see the change on next refresh.
+- **Worker runtime (per activity/workflow):** uses only `ConfigurationProvider.get()` / `require()`, `config.forTenant(tenantId)`, and `TenantRegionResolver.getRegion(tenantId)`. No Redis, no DB **for config reads** on the hot path. If the tenant’s region is not served by this worker, reject the request or route to the correct region to avoid wrong configuration and cross-region bugs. See [06_operational_guidelines](06_operational_guidelines.md#region-mismatch-protection).
 
 Use **Bootstrap.run()** at worker startup. Use **ConfigSnapshotBuilder.buildAndStore(region)** (in `org.olo.configuration.impl.snapshot`) in the admin service after updating DB. Implementation classes live under **`org.olo.configuration.impl`** and subpackages (`impl.connection`, `impl.config`, `impl.refresh`, `impl.snapshot`, `impl.source`, `impl.region`); API types remain in `configuration`, `configuration.snapshot`, `configuration.source`, and `configuration.region`.
 
@@ -347,4 +347,4 @@ org.olo.configuration
 
 **Admin service dependencies:** **HikariCP** + **PostgreSQL** (table `olo_config_resource`), **Lettuce**, **Jackson**, **SLF4J**. Admin builds snapshot from DB and writes to Redis.
 
-If DB/Redis are not configured, the worker runs with defaults + ENV only.
+If Redis is not configured, the worker runs with defaults + ENV only (no snapshot wait). If Redis is configured but DB is not, bootstrap cannot build missing snapshots from DB; ensure Redis is pre-populated by an admin process or migration.

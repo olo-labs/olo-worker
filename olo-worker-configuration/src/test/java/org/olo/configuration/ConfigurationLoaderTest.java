@@ -30,7 +30,7 @@ class ConfigurationLoaderTest {
     assertEquals("localhost:47233", config.get("olo.temporal.target"));
     assertEquals("default", config.get("olo.temporal.namespace"));
     assertEquals("localhost", config.get("olo.db.host"));
-    assertEquals(5432, config.getInteger("olo.db.port", -1));
+    assertEquals(45432, config.getInteger("olo.db.port", -1));
     assertEquals(10, config.getInteger("olo.db.pool.size", 0));
     assertFalse(config.getBoolean("olo.configuration.checksum", true));
   }

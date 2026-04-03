@@ -2,7 +2,7 @@
 
 # Global Context
 
-The **global context** is the bootstrap-time view of regions, tenants, region pipelines, and tenant overrides. It is loaded from DB (and cached in Redis) and used to resolve per-tenant effective pipelines.
+The **global context** (`org.olo.bootstrap.loader.context.GlobalContext`) is the view of configuration and compiled pipelines used after **`Bootstrap.run()`**. Tenant→region comes from **`TenantRegionResolver`** (Redis/DB at bootstrap); pipeline definitions and merges come from the **Redis-backed configuration snapshot** and **ExecutionTreeRegistry**. It is the contract tests and tooling use alongside **`ConfigurationProvider`**.
 
 ## Structure
 

@@ -53,7 +53,7 @@
       "coreRegionConfigKeys" : [ ],
       "coreTenantIds" : [ ],
       "coreResourceIds" : [ ],
-      "pipelineIds" : [ "olo.default.default-pipeline", "olo.default.default-pipeline-2" ],
+      "pipelineIds" : [ "olo.default.consensus-pipeline", "olo.default.default-pipeline-2" ],
       "connectionIds" : [ ]
     },
     "us-east" : {
@@ -74,12 +74,12 @@
   },
   "globalContextTree" : {
     "default" : {
-      "olo.default.default-pipeline" : {
-        "pipelineId" : "olo.default.default-pipeline",
+      "olo.default.consensus-pipeline" : {
+        "pipelineId" : "olo.default.consensus-pipeline",
         "version" : 1,
         "checksum" : "d38dde49c047f8dbaddab22d93f410b13f2cdcf90039955cf9f442b88a0842a8",
         "compiledPipeline" : {
-          "id" : "olo.default.default-pipeline",
+          "id" : "olo.default.consensus-pipeline",
           "inputContract" : {
             "parameters" : [ ],
             "strict" : false
@@ -100,8 +100,8 @@
           "executionTree" : {
             "id" : "root",
             "type" : "SEQUENCE",
-            "name" : "Pipeline",
-            "allowedTenantIds" : [ "tenant-a" ]
+            "name" : "Consensus pipeline",
+            "allowedTenantIds" : [ "tenant-a", "default" ]
           }
         }
       },

@@ -44,6 +44,7 @@ public final class SqlSchemaBootstrap {
       "007-seed_default_pipeline.sql",
       "008-seed_global_context_us_east.sql",
       "009-olo_capabilities.sql",
+      "010-retire_legacy_default_pipeline_id.sql",
   };
 
   private SqlSchemaBootstrap() {}

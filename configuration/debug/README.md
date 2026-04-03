@@ -10,6 +10,7 @@ Ready-made SQL, environment, and property files for **local bootstrap debugging*
 |------|---------|
 | **[schema-and-data.sql](schema-and-data.sql)** | PostgreSQL schema and sample data: tenant→region, tenant config, resource config, worker config. Run once against your DB. |
 | **[ensure-schema.sql](ensure-schema.sql)** | Idempotent script (CREATE TABLE IF NOT EXISTS, INSERT ... ON CONFLICT DO NOTHING). **Executed automatically** by the bootstrap integration test when DB is configured. |
+| **[consensus-pipeline.json](consensus-pipeline.json)** | Multi-Model Consensus pipeline definition. **Canonical copy** is also seeded as **`olo.default.consensus-pipeline`** via **`db/schema/007-seed_default_pipeline.sql`** (and `ensure-schema.sql`) so Redis/DB match for Chat BE / UI. |
 | **[workflow/](workflow/)** | Sample workflow input JSON files. Use with Temporal UI or the workflow-input debug integration test. See [How to debug workflows](../../docs/architecture/worker/how_to_debug.md). |
 | **[env.example](env.example)** | Environment variables (Unix/macOS). `source env.example` or copy to `.env`. |
 | **[env.example.bat](env.example.bat)** | Environment variables (Windows). `call env.example.bat` before running tests. |

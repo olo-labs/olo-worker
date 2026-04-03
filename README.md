@@ -54,9 +54,9 @@ Useful variables:
 |----------------|---------|
 | `OLO_TEMPORAL_TARGET` / `olo.temporal.target` | Temporal gRPC host:port |
 | `OLO_TEMPORAL_NAMESPACE` / `olo.temporal.namespace` | Temporal namespace (e.g. `default`) |
-| `OLO_REGIONS` or `OLO_REGION` / `olo.regions` or `olo.region` | Comma-separated regions this process serves (prefer **`olo.regions`**) |
+| `OLO_REGION` / `olo.region` | Region this process serves |
 | `OLO_DB_*`, `OLO_REDIS_*` | Database and Redis connection |
-| `OLO_DB_SCHEMA_AUTOAPPLY` / `olo.db.schema.autoapply` | If `true` (default), **`olo-worker-db`** runs bundled `db/schema/*.sql` on startup (PostgreSQL-compatible DBs only). Set `false` if you manage schema elsewhere |
+| `OLO_DB_SCHEMA_AUTOAPPLY` / `olo.db.schema.autoapply` | If `true` (default), **`olo-worker-db`** applies bundled `db/schema/*.sql` on startup (PostgreSQL). Seeds the **consensus** pipeline as **`olo.default.consensus-pipeline`** (same JSON as `configuration/debug/consensus-pipeline.json`). Point Chat BE (`OLO_TEMPORAL_TASK_QUEUE`) or the UI queue picker at that id so Temporal work lands on this worker. |
 
 If Temporal is not running at the configured target, the process will fail when the worker connects or polls (see logs). Long-poll RPCs use an extended client timeout in `OloWorkerApplication` to reduce spurious `DEADLINE_EXCEEDED` noise on idle queues.
 

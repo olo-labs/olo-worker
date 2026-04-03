@@ -8,7 +8,7 @@ Loads configuration at bootstrap from a **defaults file** and **environment vari
 
 ## Usage
 
-1. **Bootstrap** (e.g. in `main`): call **`Bootstrap.run()`** once. It loads defaults + env and, when Redis is configured, waits for the config store and loads the snapshot. When Redis is not configured, it sets in-memory config from defaults + env only.
+1. **Bootstrap** (e.g. in `main`): call **`Bootstrap.run()`** once. It loads defaults + env and, when Redis is configured, waits for the config store and loads the snapshot. If Redis is empty but **DB** and snapshot **ports** are registered (as in **olo-worker**), bootstrap may **build or backfill** Redis from the database **at startup only**. When Redis is not configured, it sets in-memory config from defaults + env only.
 
    ```java
    Bootstrap.run();
@@ -33,7 +33,7 @@ Use a single style everywhere; do not mix prefixed and unprefixed keys.
 | `olo.temporal.*` | Temporal client (target, namespace, task_queue) |
 | `olo.redis.*` | Redis (host, port, uri, password) |
 | `olo.db.*` | Database (host, port, url, username, password, pool.size, type, name) |
-| `olo.regions` (preferred) / `olo.region` (legacy) | Comma-separated regions this instance serves |
+| `olo.region` | Region this instance serves (one per process) |
 | `olo.db.schema.autoapply` | When `true`, `olo-worker-db` applies bundled `db/schema/*.sql` on startup (PostgreSQL family only). Env: `OLO_DB_SCHEMA_AUTOAPPLY` |
 | `olo.config.*` | Refresh, snapshot limits, pub/sub |
 | `olo.bootstrap.*` | Startup wait and retry |
@@ -56,7 +56,7 @@ Example (very clean 1:1 with config keys):
 ```bash
 OLO_DB_HOST=db.internal
 OLO_REDIS_HOST=redis.internal
-OLO_REGIONS=default,us-east
+OLO_REGION=us-east
 OLO_CONFIG_REFRESH_INTERVAL_SECONDS=30
 ```
 

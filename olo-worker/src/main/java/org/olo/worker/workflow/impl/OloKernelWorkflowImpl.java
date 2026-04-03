@@ -12,6 +12,8 @@ import io.temporal.workflow.Workflow;
 import io.temporal.workflow.WorkflowInfo;
 
 import java.time.Duration;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * OLO Kernel workflow: get plan, then run per-step/per-node or fallback to RunExecutionTree.
@@ -21,6 +23,10 @@ public class OloKernelWorkflowImpl implements org.olo.worker.workflow.OloKernelW
 
     private static final Duration ACTIVITY_SCHEDULE_TO_CLOSE = Duration.ofMinutes(5);
     private static final Duration ACTIVITY_NO_TIMEOUT_DEBUG = Duration.ofDays(365);
+    private static final String EXPENSIVE_ROUTING_PROMPT = "Use expensive routing (dynamic planner flow)?";
+
+    private boolean humanApproved;
+    private String humanMessage;
 
     @Override
     public String run(WorkflowInput workflowInput) {
@@ -43,6 +49,39 @@ public class OloKernelWorkflowImpl implements org.olo.worker.workflow.OloKernelW
         String queueName = workflowInput.getRouting() != null ? workflowInput.getRouting().getPipeline() : null;
         String queueNameOrEmpty = queueName != null ? queueName : "";
         String workflowInputJson = workflowInput.toJson();
+        String runId = workflowInput.getContext() != null ? workflowInput.getContext().getRunId() : "";
+        String callbackBaseUrl = workflowInput.getContext() != null ? workflowInput.getContext().getCallbackBaseUrl() : "";
+        String correlationId = workflowInput.getContext() != null ? workflowInput.getContext().getCorrelationId() : null;
+        String userQuery = extractUserQuery(workflowInput);
+        long sequenceNumber = 1L;
+
+        activities.reportRunEvent(
+                runId, callbackBaseUrl, sequenceNumber++, correlationId,
+                "human-routing-gate", "root", "HUMAN", "WAITING",
+                Map.of("message", EXPENSIVE_ROUTING_PROMPT),
+                Map.of("type", "USER_INPUT_REQUIRED", "taskId", "expensive-routing"),
+                Map.of("awaitingSignal", "humanInput"));
+        Workflow.await(() -> humanMessage != null);
+        activities.reportRunEvent(
+                runId, callbackBaseUrl, sequenceNumber++, correlationId,
+                "human-routing-gate", "root", "HUMAN", "COMPLETED",
+                null,
+                Map.of(
+                        "approved", humanApproved,
+                        "response", humanMessage != null ? humanMessage : ""),
+                Map.of("taskId", "expensive-routing"));
+
+        if (!humanApproved) {
+            String directResponse = activities.getChatResponse("architect", userQuery);
+            String safeResponse = directResponse != null ? directResponse : "";
+            activities.reportRunEvent(
+                    runId, callbackBaseUrl, sequenceNumber, correlationId,
+                    "direct-model-response", "root", "MODEL", "COMPLETED",
+                    Map.of("mode", "direct", "plannerSkipped", true),
+                    Map.of("response", safeResponse),
+                    Map.of("reason", "expensive_routing_declined"));
+            return safeResponse;
+        }
 
         String planJson = activities.getExecutionPlan(queueNameOrEmpty, workflowInputJson);
         if (planJson == null || !planJson.contains("\"linear\":true")) {
@@ -65,5 +104,28 @@ public class OloKernelWorkflowImpl implements org.olo.worker.workflow.OloKernelW
             String result = activities.runExecutionTree(queueNameOrEmpty, workflowInputJson);
             return result != null ? result : "";
         }
+    }
+
+    @Override
+    public void humanInput(boolean approved, String message) {
+        String normalized = message != null ? message.trim().toLowerCase() : "";
+        boolean approvedByMessage = "yes".equals(normalized) || "y".equals(normalized)
+                || "approve".equals(normalized) || "approved".equals(normalized);
+        humanApproved = approved || approvedByMessage;
+        humanMessage = message != null ? message : "";
+    }
+
+    private static Optional<String> getInputValue(WorkflowInput input, String name) {
+        if (input == null || input.getInputs() == null) return Optional.empty();
+        return input.getInputs().stream()
+                .filter(i -> name.equals(i.getName()))
+                .findFirst()
+                .map(i -> i.getValue() != null ? i.getValue() : "");
+    }
+
+    private static String extractUserQuery(WorkflowInput input) {
+        return getInputValue(input, "user_query")
+                .or(() -> getInputValue(input, "userQuery"))
+                .orElse("");
     }
 }

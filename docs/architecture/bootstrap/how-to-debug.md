@@ -43,7 +43,7 @@ Ensure the worker can connect to Redis and DB. Typical keys (from `olo-defaults.
 
 | Key / ENV | Purpose | Example |
 |-----------|---------|---------|
-| `olo.regions` / `OLO_REGIONS` (preferred) or `olo.region` / `OLO_REGION` (legacy) | Comma-separated regions this instance serves | `default,us-east` |
+| `olo.region` / `OLO_REGION` | Region this instance serves | `us-east` |
 | `olo.db.schema.autoapply` / `OLO_DB_SCHEMA_AUTOAPPLY` | Apply bundled SQL from `olo-worker-db` on startup | `true` / `false` |
 | `olo.redis.uri` or `olo.redis.host` + `olo.redis.port` | Redis connection | `redis://localhost:6379` |
 | `olo.db.url` or `olo.db.host` + `olo.db.port` + `olo.db.name` | PostgreSQL JDBC URL | `jdbc:postgresql://localhost:5432/olo` |
@@ -95,7 +95,7 @@ Individual SQL scripts (002–009) live in **`olo-worker-db/src/main/resources/d
 1. Set environment (or rely on `olo-defaults.properties`). You can use the ready-made files:
    - **Unix/macOS:** `source configuration/debug/env.example`
    - **Windows:** `call configuration\debug\env.example.bat`
-   - Or set manually, e.g. `OLO_REGIONS=default`, `OLO_REDIS_HOST=localhost`, `OLO_DB_URL=jdbc:postgresql://localhost:5432/olo`, `OLO_DB_USERNAME`, `OLO_DB_PASSWORD`.
+   - Or set manually, e.g. `OLO_REGION=default`, `OLO_REDIS_HOST=localhost`, `OLO_DB_URL=jdbc:postgresql://localhost:5432/olo`, `OLO_DB_USERNAME`, `OLO_DB_PASSWORD`.
 
 2. Ensure Redis has a configuration snapshot for the worker region (meta + core). If you use an admin service, run it first; otherwise bootstrap will wait until Redis has the snapshot (or timeout if configured).
 
@@ -130,7 +130,7 @@ The JSON is a snapshot of the **global context** after bootstrap:
 
 | Top-level key | Description |
 |---------------|-------------|
-| `globalConfig` | Flat config map from the primary region (e.g. `olo.regions` / `olo.region`, `olo.temporal.*`, feature flags). |
+| `globalConfig` | Flat config map from the primary region (e.g. `olo.region`, `olo.temporal.*`, feature flags). |
 | `primaryRegion` | The worker’s primary region. |
 | `servedRegions` | List of regions this instance serves (from config). |
 | `snapshotsByRegion` | Per-region snapshot summary: `snapshotId`, versions, core config keys, tenant/resource ids, `pipelineIds`, `connectionIds`. |
@@ -147,7 +147,7 @@ Example shape of `global-context-debug.json` (actual dump may include additional
   "primaryRegion": "default",
   "servedRegions": ["default"],
   "globalConfig": {
-    "olo.regions": "default",
+    "olo.region": "default",
     "olo.temporal.enabled": "true"
   },
   "snapshotsByRegion": {
@@ -172,7 +172,7 @@ Example shape of `global-context-debug.json` (actual dump may include additional
 |---------|----------------|
 | Test blocks or times out | Redis not reachable or snapshot (meta + core) missing for the worker region. Start Redis and ensure an admin has pushed the snapshot, or disable Redis for local-only config. |
 | `tenantToRegion` empty | DB not configured, `olo_configuration_region` missing/empty, or Redis tenant-region cache empty and DB unreachable. Run the `002-olo_configuration_region.sql` script and insert rows. |
-| “Configuration not set” / “No configuration snapshot loaded” | Worker region has no snapshot in Redis. Push snapshot for that region (admin) or set `olo.regions` / `olo.region` to a region that has snapshot data. |
+| “Configuration not set” / “No configuration snapshot loaded” | Worker region has no snapshot in Redis. Push snapshot for that region (admin) or set `olo.region` to a region that has snapshot data. |
 | “Snapshot store factory is not registered” | Ports not registered: ensure the test runs with `DbPortRegistrar.registerDefaults()` and `CachePortRegistrar.registerDefaults()` (the integration test does this). |
 
 For full bootstrap flow and Redis key layout, see [Configuration bootstrap](../../configuration/02_bootstrap.md) and the configuration architecture docs.

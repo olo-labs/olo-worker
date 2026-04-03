@@ -10,15 +10,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Local configuration for Region: comma-separated list of regions this instance serves.
- * Tenant→region mapping is stored in DB table {@code olo_configuration_region} and can be cached in Redis.
+ * Local configuration for region. Workers must configure exactly one region per process; run additional
+ * worker processes to serve additional regions. Tenant→region mapping is stored in DB table
+ * {@code olo_configuration_region} and can be cached in Redis.
  */
 public final class Regions {
 
-  /** Legacy config key for comma-separated list of regions (kept for backward compatibility). */
+  /** Config key for region (single value; comma-separated lists are rejected at worker bootstrap). */
   public static final String CONFIG_KEY = "olo.region";
-  /** Preferred config key for comma-separated list of regions. */
-  public static final String CONFIG_KEY_LIST = "olo.regions";
 
   /** Default region when not configured. */
   public static final String DEFAULT_REGION = "default";
@@ -26,19 +25,17 @@ public final class Regions {
   private Regions() {}
 
   /**
-   * Returns the configured comma-separated region string (e.g. "default" or "default,us-east,eu-west").
+   * Returns the configured region string from {@value #CONFIG_KEY}.
    */
   public static String getRegionList(Configuration config) {
     if (config == null) {
       return DEFAULT_REGION;
     }
-    // Prefer new key (olo.regions); fall back to legacy (olo.region) to remain backward compatible.
-    String list = config.get(CONFIG_KEY_LIST, "").trim();
-    if (!list.isEmpty()) {
-      return list;
+    String v = config.get(CONFIG_KEY, "").trim();
+    if (v.isEmpty()) {
+      return DEFAULT_REGION;
     }
-    String v = config.get(CONFIG_KEY, DEFAULT_REGION);
-    return v != null ? v.trim() : DEFAULT_REGION;
+    return v;
   }
 
   /**
@@ -55,5 +52,20 @@ public final class Regions {
         .filter(s -> !s.isEmpty())
         .collect(Collectors.toList());
     return regions.isEmpty() ? Collections.singletonList(DEFAULT_REGION) : regions;
+  }
+
+  /**
+   * Ensures at most one non-empty region is configured. Call from worker bootstrap; multiple regions
+   * (e.g. {@code olo.region=default,us-east}) are not supported in a single process.
+   *
+   * @throws IllegalStateException if more than one region is present after splitting on commas
+   */
+  public static void enforceSingleRegion(Configuration config) {
+    List<String> regions = getRegions(config);
+    if (regions.size() > 1) {
+      throw new IllegalStateException(
+          "Exactly one region is allowed per worker process; configure a single value for "
+              + CONFIG_KEY + ". Got: " + getRegionList(config));
+    }
   }
 }

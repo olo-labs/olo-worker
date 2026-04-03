@@ -33,10 +33,10 @@ Set limits in env (e.g. `OLO_CONFIG_SNAPSHOT_MAX_PIPELINES=2000`) if you want th
 
 ## Region (local config + DB mapping)
 
-Workers may serve **one or more regions** depending on deployment. Each configured region has an **independent configuration snapshot** in Redis. A single worker process can serve multiple regions (comma-separated) or a single region; deployment choice.
+Each worker process serves **one region** (`olo.region`). Each region has an **independent configuration snapshot** in Redis; scale out with multiple workers for multiple regions.
 
-- **Local config key**: **`olo.regions`** (preferred) or legacy **`olo.region`** — comma-separated list of regions this instance serves.
-- **ENV override**: `OLO_REGIONS=default,us-east` (or `OLO_REGION=...` for legacy)
+- **Local config key**: **`olo.region`** — region this instance serves (one per process).
+- **ENV override**: `OLO_REGION=us-east`
 - **DB table**: `olo_configuration_region` — `tenant_id` PK, `region`, `updated_at`. Index on `region`.
 - **Redis cache**: Hash `olo:worker:tenant:region` — field = tenant ID, value = region.
 - **Usage:** **Regions.getRegions(Configuration)**, **TenantRegionResolver.loadFrom(Configuration)** (once at bootstrap), **TenantRegionResolver.getRegion(tenantId)**.
@@ -76,7 +76,7 @@ Without this check:
 - **Wrong configuration** — Tenant could get another region’s snapshot.
 - **Cross-region bugs** — Data or behavior tied to the wrong region.
 
-Implement by checking **Regions.getRegions(Configuration)** or the configured **`olo.regions` / `olo.region`** list before using **TenantRegionResolver.getRegion(tenantId)** to resolve config; if the resolved region is not in the worker’s served list, reject or redirect.
+Implement by checking **Regions.getRegions(Configuration)** or the configured **`olo.region`** before using **TenantRegionResolver.getRegion(tenantId)** to resolve config; if the resolved region is not in the worker’s served list, reject or redirect.
 
 ---
 
@@ -103,7 +103,7 @@ Avoid mixing styles (e.g. `olo.redis.host` with `db.host`). Use **`olo.`** every
 - **`olo.temporal.*`** — Temporal (target, namespace, task_queue)
 - **`olo.redis.*`** — Redis (host, port, uri, password)
 - **`olo.db.*`** — DB (host, port, url, username, password, pool.size, type, name)
-- **`olo.regions`** (preferred) / **`olo.region`** (legacy) — Comma-separated regions this instance serves (one or more; each has its own snapshot)
+- **`olo.region`** — Region this instance serves (one per process; each region has its own snapshot)
 - **`olo.config.*`** — Refresh, snapshot limits, pub/sub
 - **`olo.bootstrap.*`** — Startup wait and retry
 - **`olo.configuration.checksum`** — Snapshot checksum validation
@@ -120,7 +120,7 @@ Example:
 ```bash
 OLO_DB_HOST=db.internal
 OLO_REDIS_HOST=redis.internal
-OLO_REGIONS=us-east
+OLO_REGION=us-east
 OLO_CONFIG_REFRESH_INTERVAL_SECONDS=30
 ```
 
@@ -136,6 +136,6 @@ OLO_CONFIG_REFRESH_INTERVAL_SECONDS=30
 | **`ConfigurationProvider.forTenant(tenantId)`** / **`forContext(tenantId, resourceId)`** | Config for tenant (resolved by tenant region). |
 | **`TenantRegionResolver.loadFrom(Configuration)`** | Load tenant→region from Redis/DB (call once at bootstrap). |
 | **`TenantRegionResolver.getRegion(tenantId)`** | Region for tenant, or `default`. |
-| **`Regions.getRegions(Configuration)`** | List of regions from **`olo.regions`** or legacy **`olo.region`**. |
+| **`Regions.getRegions(Configuration)`** | List containing the single region from **`olo.region`**. |
 | **`FeatureFlags.isEnabled(flagKey, tenantId, pipelineId)`** | Feature flag with scope. |
 | **Config keys** | See [02_bootstrap](02_bootstrap.md), [04_refresh](04_refresh.md), and size limits above. |

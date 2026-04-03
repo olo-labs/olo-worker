@@ -23,6 +23,11 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -35,6 +40,7 @@ public class OloKernelActivitiesImpl implements OloKernelActivities {
 
     private static final Logger log = LoggerFactory.getLogger(OloKernelActivitiesImpl.class);
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder().build();
 
     private final OloSessionCache sessionCache;
     private final Set<String> allowedTenantIds;
@@ -176,5 +182,39 @@ public class OloKernelActivitiesImpl implements OloKernelActivities {
     @Override
     public String runExecutionTree(String queueName, String workflowInputJson) {
         return treeRunService.runExecutionTree(queueName, workflowInputJson);
+    }
+
+    @Override
+    public void reportRunEvent(String runId, String callbackBaseUrl, long sequenceNumber, String correlationId,
+                               String nodeId, String parentNodeId, String nodeType, String status,
+                               Map<String, Object> input, Map<String, Object> output, Map<String, Object> metadata) {
+        if (runId == null || runId.isBlank() || callbackBaseUrl == null || callbackBaseUrl.isBlank()) {
+            return;
+        }
+        String url = callbackBaseUrl.replaceAll("/$", "") + "/api/runs/" + runId + "/events";
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("sequenceNumber", sequenceNumber);
+        if (correlationId != null && !correlationId.isBlank()) body.put("correlationId", correlationId);
+        body.put("nodeId", nodeId != null ? nodeId : "human-routing-gate");
+        body.put("parentNodeId", parentNodeId);
+        body.put("nodeType", nodeType != null ? nodeType : "HUMAN");
+        body.put("status", status != null ? status : "WAITING");
+        body.put("input", input != null ? input : Map.of());
+        body.put("output", output != null ? output : Map.of());
+        body.put("metadata", metadata != null ? metadata : Map.of());
+        try {
+            String json = MAPPER.writeValueAsString(body);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
+                    .build();
+            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (response.statusCode() >= 400) {
+                log.warn("reportRunEvent failed runId={} status={} body={}", runId, response.statusCode(), response.body());
+            }
+        } catch (Exception e) {
+            log.warn("reportRunEvent error runId={} message={}", runId, e.getMessage());
+        }
     }
 }

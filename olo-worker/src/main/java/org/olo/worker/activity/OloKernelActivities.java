@@ -92,4 +92,14 @@ public interface OloKernelActivities {
     @ActivityMethod
     String executeNode(String activityType, String planJson, String nodeId, String variableMapJson,
                        String queueName, String workflowInputJson, String dynamicStepsJson);
+
+    /**
+     * Worker callback event to BE (/api/runs/{runId}/events).
+     * sequenceNumber must be provided for BE idempotency.
+     */
+    @ActivityMethod
+    void reportRunEvent(String runId, String callbackBaseUrl, long sequenceNumber, String correlationId,
+                        String nodeId, String parentNodeId, String nodeType, String status,
+                        java.util.Map<String, Object> input, java.util.Map<String, Object> output,
+                        java.util.Map<String, Object> metadata);
 }

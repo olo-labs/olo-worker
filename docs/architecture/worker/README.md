@@ -18,4 +18,4 @@ This folder documents the **OLO worker** runtime: tools, plugins, features, and 
 
 - **Execution tree** ([../execution-tree/README.md](../execution-tree/README.md)) defines node types and variable model; the worker engine dispatches and runs them.
 - **Execution context** ([../execution-context/README.md](../execution-context/README.md)) covers global context, local context, and runtime context used by the worker.
-- **Bootstrap** ([../bootstrap/README.md](../bootstrap/README.md)) describes how plugins and features are registered and how the worker runtime is built.
+- **Bootstrap** ([../bootstrap/README.md](../bootstrap/README.md)) — **`Bootstrap.run()`** loads Redis-backed snapshots into **`ConfigurationProvider`**; **`GlobalContext`** exposes config and compiled pipelines. The phased **`BootstrapLoader`** path is documented for contributors/registry wiring but is not the `main` entry today.

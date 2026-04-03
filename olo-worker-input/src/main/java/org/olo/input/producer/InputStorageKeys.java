@@ -9,13 +9,13 @@ import java.util.Objects;
 /**
  * Standard key format for cache storage of input values. Both producer and consumer use this so keys are consistent.
  * Multi-tenant: all keys are scoped by tenant id, {@code olo:<tenantId>:worker:<transactionId>:input:<inputName>}.
- * Default tenant id must match {@link org.olo.config.OloConfig} (OLO_DEFAULT_TENANT_ID / same UUID).
+ * Default tenant id must match {@code olo.default-tenant-id} (e.g. {@code default}).
  */
 public final class InputStorageKeys {
 
     private static final String PREFIX = "olo:worker:";
-    /** Default tenant id when none provided; must match OloConfig default (UUID). */
-    private static final String DEFAULT_TENANT_ID = "2a2a91fb-f5b4-4cf0-b917-524d242b2e3d";
+    /** Default tenant id when none provided; align with {@code olo.default-tenant-id}. */
+    private static final String DEFAULT_TENANT_ID = "default";
 
     private InputStorageKeys() {
     }
@@ -24,7 +24,7 @@ public final class InputStorageKeys {
      * Builds the cache key for an input value (tenant-scoped).
      * Format: {@code olo:<tenantId>:worker:<transactionId>:input:<inputName>}.
      *
-     * @param tenantId      tenant id (use {@link org.olo.config.OloConfig#normalizeTenantId(String)} if from context)
+     * @param tenantId      tenant id (same as platform default / {@code olo.default-tenant-id})
      * @param transactionId the workflow/transaction id
      * @param inputName     the input name
      * @return the cache key

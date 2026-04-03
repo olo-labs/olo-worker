@@ -34,22 +34,23 @@ Every 60 sec:
 
 ---
 
-## Worker startup flow (Bootstrap.run())
+## Worker startup flow (`Bootstrap.run()`)
 
-1. Load defaults  
-2. Load environment variables  
-3. If DB is configured: initialize **`DbClient`**; when **`olo.db.schema.autoapply`** is true, `olo-worker-db` applies bundled **`db/schema/*.sql`** (PostgreSQL-compatible)  
-4. Determine worker regions (`olo.regions` / `olo.region`)  
-5. Initialize Redis client (when Redis is configured)  
-6. Wait until Redis and configuration snapshot are available  
-7. Load snapshot from Redis  
-8. Build immutable configuration snapshot; atomically install into ConfigurationProvider  
-9. Load tenant–region mapping  
-10. Start configuration refresh scheduler (optional)
+Implementation: **`org.olo.configuration.Bootstrap`**.
 
-The tenant–region mapping can change at runtime (e.g. a tenant moves region). **Tenant region mapping refresh** runs independently via **TenantRegionRefreshScheduler** (e.g. every 60 s or via event); otherwise the mapping would become stale. See [06_operational_guidelines](06_operational_guidelines.md).
+1. Load **defaults** (`olo-defaults.properties`) and **environment** (`OLO_*`).  
+2. **Enforce single region** in config (`Regions.enforceSingleRegion`) — worker process serves one primary region string (comma-separated lists are truncated to the first value for connection config).  
+3. If **DB** is configured: register **`DbClient`** via **`ConfigurationPortRegistry`**; when **`olo.db.schema.autoapply`** is true, **`olo-worker-db`** applies bundled **`db/schema/*.sql`**.  
+4. If **Redis or DB** is configured: **`TenantRegionResolver.loadFrom(...)`** so tenant→region data is available (Redis-first; may hydrate from DB).  
+5. **If Redis is configured:**  
+   - Wait until Redis is reachable and **meta + core** exist for the worker region; optionally **build snapshot from DB** (`ConfigSnapshotBuilder`) or **backfill pipeline section** (`PipelineSectionBuilder`) when Redis is empty but DB is available.  
+   - Load worker region via **`RedisSnapshotLoader`**, then load **additional served regions** into **`ConfigurationProvider.setSnapshotMap`** (multi-region workers).  
+6. **If Redis is not configured:** set **`ConfigurationProvider`** from defaults + env only.  
+7. Start **config refresh** (periodic and/or Pub/Sub) and **TenantRegionRefreshScheduler** when enabled by config.
 
-**Determining region:** Regions are determined using **`olo.regions`** (preferred) or legacy **`olo.region`** — a comma-separated list of regions this instance serves. Workers may serve one or more regions; each configured region has an independent configuration snapshot. Typical ENV: **`OLO_REGIONS=default,us-east`**. If not set, defaults apply (see `olo-defaults.properties`).
+The tenant–region mapping can change at runtime. **TenantRegionRefreshScheduler** runs independently; see [06_operational_guidelines](06_operational_guidelines.md).
+
+**Determining region:** The worker region is set with **`olo.region`** (one per process). Each region has an independent configuration snapshot. Typical ENV: **`OLO_REGION=us-east`**. If not set, defaults apply (see `olo-defaults.properties`).
 
 **What “snapshot available” means:** The worker waits until the following exist in Redis (exact prefix depends on **`olo.cache.root-key`**, default root `olo`):
 - **Snapshot metadata** — e.g. **`<root>:config:meta`**

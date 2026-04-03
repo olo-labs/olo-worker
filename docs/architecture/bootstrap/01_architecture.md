@@ -6,34 +6,46 @@ Part of the [bootstrap](README.md) documentation.
 
 ---
 
-## 1. High-Level Bootstrap Flow
+## 1. High-Level Bootstrap Flow (current `olo-worker` process)
 
-Worker startup:
+Worker startup in **`OloWorkerApplication.main`**:
 
 ```text
-OloWorkerApplication
+DbPortRegistrar.registerDefaults() / CachePortRegistrar.registerDefaults()
       ↓
-BootstrapLoader.initialize()
+Bootstrap.run()                    ← org.olo.configuration (olo-worker-configuration)
+      ↓
+GlobalContextProvider.getGlobalContext()
+      ↓
+Derive Temporal task queues from pipeline IDs in snapshot; register OloKernelWorkflowImpl + activities per queue
+      ↓
+WorkerFactory.start()
+```
+
+- **`Bootstrap.run()`** loads defaults and env, waits for Redis (when configured), loads **sectioned configuration snapshots** into **`ConfigurationProvider`**, optionally starts config refresh and **TenantRegionRefreshScheduler**, and may use **DB only during bootstrap** to seed Redis or backfill pipeline sections (see [configuration/02_bootstrap](../configuration/02_bootstrap.md)).
+- **`GlobalContext`** (from **olo-worker-bootstrap-loader**) is a facade over **`ConfigurationProvider`**, **`TenantRegionResolver`**, and **`ExecutionTreeRegistry`** — it does not replace `Bootstrap.run()`; it exposes the same snapshot-backed state to workflow code and tests.
+
+**Shutdown:** `Bootstrap.stopRefreshScheduler()` and `Bootstrap.stopTenantRegionRefreshScheduler()` (registered on JVM shutdown with Temporal factory shutdown).
+
+---
+
+## 1.0 Phased loader model (`BootstrapLoader`) — library, not `main`
+
+The modules **olo-worker-bootstrap-loader** and **olo-worker-bootstrap-runtime** implement an alternate, **phase-based** startup: contributors per `BootstrapPhase`, registry wiring, output **`WorkerRuntime`**. **`OloWorkerApplication` does not call `BootstrapLoader.initialize()` today.** Use this model when extending toward full plugin/descriptor-driven wiring or for integration tests that need the same registries.
+
+```text
+BootstrapLoader.initialize(contributors)
       ↓
 WorkerRuntime
       ↓
-Temporal workers / runtimes start using the configured context
+Temporal workers (optional integration path)
 ```
 
-**Loader** (startup, runs once): environment resolution, configuration loading, descriptor discovery, plugin/feature registration, pipeline loading, registry wiring, validation. **Output:** `WorkerRuntime`.
+**Loader** (when used): environment resolution, contributor orchestration, registry wiring. **Output:** `WorkerRuntime`.
 
-**Runtime** (execution infrastructure): `WorkerRuntime` exposes `PluginExecutorFactory`, `FeatureRuntime`, `EventBus`, `ConnectionResolver`, `SecretResolver`, `ResourceCleanup`. These services live for the lifetime of the worker and are used during execution, not during bootstrap.
+**Runtime:** `WorkerRuntime` exposes `PluginExecutorFactory`, `FeatureRuntime`, `EventBus`, `ConnectionResolver`, `SecretResolver`, `ResourceCleanup` — used when the phased path is adopted.
 
-**Outcomes of bootstrap:**
-
-- Plugins and tools registered and wired via `PluginRegistry` / `PluginExecutorFactory`.
-- Features registered via `FeatureRegistry` / `PipelineFeatureContext`.
-- Execution trees and tenant configs loaded and snapshotted.
-- Connection and secret resolvers (when implemented) registered.
-- `EventBus` / `ExecutionEventBus` registered for logging, metrics, UI, human-approval, etc.
-- Shutdown hook (`ResourceCleanup.onExit()` etc.) configured.
-
-**Goals:** Explicit, modular, aligned with microkernel — kernel contracts, runtimes, and plugins wired in a clear, one-way dependency graph.
+**Goals (phased model):** Explicit, modular, aligned with microkernel — kernel contracts, runtimes, and plugins wired in a clear, one-way dependency graph.
 
 ---
 
@@ -195,7 +207,7 @@ build WorkerRuntime (from olo-worker-bootstrap-runtime)
 **WorkerRuntime** lives in **olo-worker-bootstrap-runtime**. It is the bridge between bootstrap and execution:
 
 - Exposes execution infrastructure used **during execution** (not during bootstrap): `PluginExecutorFactory`, `FeatureRuntime`, `EventBus`, `ConnectionResolver`, `SecretResolver`, `ResourceCleanup`, and a generic `ServiceRegistry` for extensions.
-- Built once by `BootstrapLoader.initialize()`; the worker holds it for the lifetime of the process.
+- Built once by `BootstrapLoader.initialize()` when using the phased path; the worker holds it for the lifetime of the process.
 - Worker uses: `runtime.plugins()`, `runtime.features()`, `runtime.events()`, `runtime.connectionResolver()`, `runtime.secretResolver()`, `runtime.resourceCleanup()`, and never sees descriptors or loading details.
 
 ```text
@@ -210,10 +222,12 @@ WorkerRuntime
 
 These services live for the lifetime of the worker. The loader module wires them; the runtime module defines their contracts.
 
-### 4.1 End-to-End Diagram
+### 4.1 End-to-End Diagram (phased loader path)
+
+When using **`BootstrapLoader.initialize()`** (not the default `main`):
 
 ```text
-                OloWorkerApplication
+                OloWorkerApplication (or test harness)
                          │
                          ▼
                 BootstrapLoader.initialize()
@@ -241,6 +255,8 @@ These services live for the lifetime of the worker. The loader module wires them
                         ▼
                 Execution Engine
 ```
+
+**Default `OloWorkerApplication` path:** `Bootstrap.run()` → `GlobalContext` → Temporal workers; plugin factory is resolved reflectively (`DefaultPluginExecutorFactory`) when present on the classpath.
 
 ---
 

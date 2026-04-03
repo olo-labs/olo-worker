@@ -98,15 +98,15 @@ ON olo_tenant_pipeline_override(pipeline_id, pipeline_version);
 DELETE FROM olo_pipeline_template WHERE region IN ('default', 'us-east', 'eu-west');
 DELETE FROM olo_tenant_pipeline_override;
 
--- Default region: two sample pipelines
+-- Default region: consensus pipeline (configuration/debug/consensus-pipeline.json) + second sample pipeline
 INSERT INTO olo_pipeline_template (region, pipeline_id, version, is_active, tree_json, updated_at)
 VALUES
   (
     'default',
-    'olo.default.default-pipeline',
+    'olo.default.consensus-pipeline',
     1,
     true,
-    '{"id":"olo.default.default-pipeline","name":"olo.default.default-pipeline","version":1,"workflowId":"default","description":"Bootstrap default pipeline","inputContract":{"strict":false,"parameters":[]},"variableRegistry":[],"scope":{"plugins":[],"features":[]},"executionTree":{"id":"root","displayName":"Pipeline","type":"SEQUENCE","children":[]},"outputContract":{"parameters":[]},"resultMapping":[],"allowedTenantIds":["tenant-a"],"isDebugPipeline":true,"isDynamicPipeline":true}'::jsonb,
+    '{"id":"olo.default.consensus-pipeline","name":"Multi-Model Consensus Pipeline","version":1,"description":"Architect and Critic models discuss until consensus. Planner uses consensus_subtree_creator.","inputContract":{"strict":false,"parameters":[]},"variableRegistry":[{"name":"user_query","type":"string","scope":"IN"}],"scope":{"plugins":{"architect":{"contractType":"MODEL_EXECUTOR"},"critic":{"contractType":"MODEL_EXECUTOR"},"consensus_subtree_creator":{"contractType":"SUBTREE_CREATOR"}},"features":[]},"executionTree":{"id":"root","displayName":"Consensus pipeline","type":"SEQUENCE","children":[{"id":"planner-consensus","type":"PLANNER","displayName":"Consensus planner","params":{"planInputVariable":"user_query","subtreeCreatorPluginRef":"consensus_subtree_creator"},"children":[]}]},"outputContract":{"parameters":[]},"resultMapping":[{"variable":"__planner_last_response"}],"allowedTenantIds":["tenant-a","default"],"isDebugPipeline":true,"isDynamicPipeline":true}'::jsonb,
     CURRENT_TIMESTAMP
   ),
   (

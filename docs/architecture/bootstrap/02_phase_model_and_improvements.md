@@ -4,6 +4,8 @@
 
 Part of the [bootstrap](README.md) documentation.
 
+This document describes the **phased `BootstrapLoader` design** and future improvements. The **running worker process** uses **`Bootstrap.run()`** and **`GlobalContext`** (see [01_architecture](01_architecture.md)); the orchestration split below applies when adopting or extending **`BootstrapLoader.initialize()`**.
+
 ---
 
 ## 1. Separate Bootstrap Orchestration from Services

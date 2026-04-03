@@ -74,7 +74,9 @@ class BootstrapGlobalContextDumpTest {
       "updated_at",
       // New optional/debug-only fields we don't assert on structurally
       "isDebugPipeline",
-      "isDynamicPipeline"
+      "isDynamicPipeline",
+      // Compiled tree shape varies with pipeline JSON; DB seed is source of truth
+      "compiledPipeline"
   ));
 
   @AfterEach

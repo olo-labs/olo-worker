@@ -29,7 +29,11 @@ public final class ResultMapper {
         Objects.requireNonNull(variableEngine, "variableEngine");
         List<ResultMapping> mapping = pipeline.getResultMapping();
         if (mapping == null || mapping.isEmpty()) {
-            return "";
+            // Backward/robustness fallback:
+            // Some pipelines may have no explicit resultMapping configured (e.g. older Redis snapshots).
+            // When the planner writes a stable "latest response" variable, prefer it.
+            Object last = variableEngine.get("__planner_last_response");
+            return last != null ? last.toString() : "";
         }
         ResultMapping first = mapping.get(0);
         Object val = variableEngine.get(first.getVariable());

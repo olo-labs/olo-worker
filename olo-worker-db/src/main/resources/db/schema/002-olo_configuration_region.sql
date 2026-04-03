@@ -14,6 +14,7 @@ CREATE INDEX IF NOT EXISTS idx_olo_configuration_region_region
 ON olo_configuration_region(region);
 
 INSERT INTO olo_configuration_region (tenant_id, region) VALUES
+    ('default', 'default'),
     ('tenant-a', 'default'),
     ('tenant-b', 'us-east'),
     ('tenant-c', 'eu-west')

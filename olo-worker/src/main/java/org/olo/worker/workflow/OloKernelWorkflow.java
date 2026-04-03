@@ -7,6 +7,7 @@ package org.olo.worker.workflow;
 import org.olo.input.model.WorkflowInput;
 import io.temporal.workflow.WorkflowInterface;
 import io.temporal.workflow.WorkflowMethod;
+import io.temporal.workflow.SignalMethod;
 
 /**
  * OLO Kernel workflow. Receives workflow input and orchestrates processing.
@@ -24,4 +25,12 @@ public interface OloKernelWorkflow {
      */
     @WorkflowMethod
     String run(WorkflowInput workflowInput);
+
+    /**
+     * Human input signal used by BE endpoint POST /api/runs/{runId}/human-input.
+     * approved=true  -> execute expensive dynamic planner flow
+     * approved=false -> skip planner and use direct LLM response path
+     */
+    @SignalMethod
+    void humanInput(boolean approved, String message);
 }

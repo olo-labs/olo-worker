@@ -78,6 +78,7 @@ public final class Bootstrap {
    */
   public static void run(boolean startRefreshScheduler) {
     Map<String, String> minimal = loadDefaultsAndEnvOnly();
+    Regions.enforceSingleRegion(new DefaultConfiguration(minimal));
     ConnectionConfig conn = buildConnectionConfig(minimal);
 
     if (conn.hasDb()) {
@@ -189,9 +190,10 @@ public final class Bootstrap {
   }
 
   static ConnectionConfig buildConnectionConfig(Map<String, String> m) {
-    String region = get(m, "olo.regions", "").trim();
+    // Region: single value expected (Bootstrap.run enforces via Regions.enforceSingleRegion).
+    String region = get(m, "olo.region", "").trim();
     if (region.isEmpty()) {
-      region = get(m, "olo.region", "default");
+      region = Regions.DEFAULT_REGION;
     } else {
       int comma = region.indexOf(',');
       region = comma > 0 ? region.substring(0, comma).trim() : region;

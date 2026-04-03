@@ -8,9 +8,11 @@ Part of the [olo-worker-configuration](olo-worker-configuration.md) documentatio
 
 ## Redis sectioned snapshot model
 
-**Workers only:** defaults → env → Redis **sectioned** config (core required; pipelines and connections optional). **Workers never rebuild config from DB.** On Redis miss or missing core at startup, the loader returns null and Bootstrap fails; no fallback to defaults + env or empty snapshot.
+**Workers:** defaults → env → Redis **sectioned** config (core required for a valid startup when Redis is enabled; pipelines and connections may be filled during bootstrap). **At workflow runtime**, workers read only the in-memory snapshot — **no DB reads for config on the hot path.**
 
-**Admin service only:** DB → build snapshot → write to **sectioned** Redis keys (core + meta; optionally pipelines, connections) → increment version.
+**Bootstrap exception:** when **DB is configured** and **`ConfigurationPortRegistry`** exposes builders/repositories, **`Bootstrap.run()`** may **write** pipeline/core sections into Redis from DB (e.g. missing snapshot, or missing pipelines for a region) so the worker can proceed. That is **startup-only** seeding, not ongoing admin writes.
+
+**Admin service:** DB → build snapshot → write to **sectioned** Redis keys (core + meta; optionally pipelines, connections) → increment version — the steady-state writer for production.
 
 ---
 
@@ -51,7 +53,7 @@ olo:configuration:connections:<region>
 | **`olo:config:resources:<region>`** | Region-scoped resources (runtime resources / configs). Optional. |
 | **`olo:config:overrides:tenant:<tenantId>`** | Tenant-specific overrides (lazy/cached). Optional. |
 
-Explicit key layout for **operators**, **debugging**, **migrations**, and **tooling**. All keys use the **`olo:config:*`** prefix.
+Explicit key layout for **operators**, **debugging**, **migrations**, and **tooling**. Keys live under **`<redisRoot>:config:*`**; default **`olo.cache.root-key`** is **`olo`**, so examples show **`olo:config:*`**. Override with **`OLO_CACHE_ROOT_KEY`** / **`olo.cache.root-key`** for multi-tenant Redis namespaces.
 
 **TTL:** Redis keys do **not** use TTL. Snapshots are **persistent** until replaced by the admin service. Do not configure expiry on these keys; otherwise workers may see keys disappear and fail to load or refresh.
 

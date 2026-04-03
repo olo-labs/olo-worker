@@ -36,7 +36,7 @@ public final class ConfigurationProvider {
   /** Volatile: defaults + env only; set when Redis is not configured. Null when snapshot map is set. */
   private static volatile Configuration defaultConfiguration;
 
-  /** Regions configured at bootstrap from olo.regions/olo.region (defaults + env). Used for dump and execution tree scope. */
+  /** Regions configured at bootstrap from olo.region (defaults + env). Used for dump and execution tree scope. */
   private static volatile List<String> configuredRegions;
 
   /** Listeners notified when a region's composite is installed or removed (e.g. so worker can rebuild execution tree). */
@@ -62,7 +62,7 @@ public final class ConfigurationProvider {
     primaryRegion = null;
   }
 
-  /** Sets the list of regions this worker was configured to serve (from olo.regions/olo.region at bootstrap). */
+  /** Sets the list of regions this worker was configured to serve (from olo.region at bootstrap). */
   public static void setConfiguredRegions(List<String> regions) {
     configuredRegions = regions == null ? null : Collections.unmodifiableList(regions);
   }

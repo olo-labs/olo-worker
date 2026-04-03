@@ -75,8 +75,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class WorkflowInputDebugIntegrationTest {
 
     private static final ObjectMapper JSON = new ObjectMapper();
-    private static final String TASK_QUEUE = "olo.default.default-pipeline";
-    private static final String SAMPLE_INPUT_PATH = "configuration/debug/workflow/sample-default-pipeline.json";
+    private static final String TASK_QUEUE = "olo.default.consensus-pipeline";
+    private static final String SAMPLE_INPUT_PATH = "configuration/debug/workflow/sample-consensus-pipeline.json";
     private static final String TEMPORAL_TARGET_ENV = "OLO_TEMPORAL_TARGET";
     private static final String TEMPORAL_NAMESPACE_ENV = "OLO_TEMPORAL_NAMESPACE";
     private static final String DEFAULT_TARGET = "localhost:47233";
