@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.olo.config.TenantConfigRegistry;
 import org.olo.plugin.ExecutablePlugin;
 import org.olo.plugin.PluginRegistry;
+import org.olo.plugin.util.PluginHumanSummary;
 
 import java.util.Map;
 import java.util.Objects;
@@ -49,7 +50,8 @@ public final class RegistryPluginExecutor implements org.olo.plugin.PluginExecut
         var tenantConfig = TenantConfigRegistry.getInstance().get(tenantId);
         try {
             Map<String, Object> outputs = plugin.execute(inputs != null ? inputs : Map.of(), tenantConfig);
-            return MAPPER.writeValueAsString(outputs != null ? outputs : Map.of());
+            Map<String, Object> enriched = PluginHumanSummary.enrich(pluginId, inputs, outputs);
+            return MAPPER.writeValueAsString(enriched != null ? enriched : Map.of());
         } catch (Exception e) {
             throw new RuntimeException("Plugin execution failed: " + pluginId + " - " + e.getMessage(), e);
         }

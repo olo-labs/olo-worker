@@ -40,11 +40,13 @@ public final class SqlSchemaBootstrap {
       "003-olo_configuration_tenant.sql",
       "004-olo_config_resource.sql",
       "005-olo_pipeline_template.sql",
+      "012-olo_pipeline_template_queues_profiles.sql",
       "006-olo_tenant_pipeline_override.sql",
       "007-seed_default_pipeline.sql",
       "008-seed_global_context_us_east.sql",
       "009-olo_capabilities.sql",
       "010-retire_legacy_default_pipeline_id.sql",
+      "011-olo_config_section.sql",
   };
 
   private SqlSchemaBootstrap() {}

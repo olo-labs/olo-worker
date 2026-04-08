@@ -36,5 +36,14 @@
   "resultMapping": [ { "variable": "__planner_last_response" } ],
   "allowedTenantIds": ["tenant-a", "default"],
   "isDebugPipeline": true,
-  "isDynamicPipeline": true
+  "isDynamicPipeline": true,
+  "chatProfiles": {
+    "profileOrder": "fast,smart,cheap,debug",
+    "profiles": {
+      "fast": { "display_name": "Fast Response", "display_summary": "Quick replies with a fast, lightweight model.", "emoji": "⚡", "queue": "olo-fast-queue", "pipeline": "fast-pipeline", "run_again": true },
+      "smart": { "display_name": "Smart Assistant", "display_summary": "Stronger reasoning for harder questions.", "emoji": "🧠", "queue": "olo-smart-queue", "pipeline": "reasoning-pipeline", "run_again": true },
+      "cheap": { "display_name": "Low Cost Model", "display_summary": "Lowest cost; best for simple queries.", "emoji": "💬", "queue": "olo-cheap-queue", "pipeline": "minimal-pipeline", "run_again": true },
+      "debug": { "display_name": "Debug Mode", "display_summary": "Verbose traces and a debug-oriented pipeline.", "emoji": "🐞", "queue": "olo-cheap-queue", "pipeline": "minimal-pipeline-debug", "run_again": false }
+    }
+  }
 }

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.olo.configuration.chat.PipelineChatProfilesSection;
 import org.olo.executiontree.config.ExecutionType;
 import org.olo.executiontree.inputcontract.InputContract;
 import org.olo.executiontree.inputcontract.InputContractImpl;
@@ -44,6 +45,8 @@ public final class PipelineDefinition implements org.olo.executiontree.config.Pi
   private final String executionType;
   private final boolean isDebugPipeline;
   private final boolean isDynamicPipeline;
+  /** Optional UI chat profiles (queue/pipeline presets); deserialized from pipeline JSON only. */
+  private final PipelineChatProfilesSection chatProfiles;
 
   /** Converts Map or List of result mappings (e.g. {variable}) to Map<String, String>. */
   @SuppressWarnings("unchecked")
@@ -81,7 +84,8 @@ public final class PipelineDefinition implements org.olo.executiontree.config.Pi
       @JsonProperty("resultMapping") Object resultMappingList,
       @JsonProperty("executionType") String executionType,
       @JsonProperty("debugPipeline") boolean isDebugPipeline,
-      @JsonProperty("dynamicPipeline") boolean isDynamicPipeline) {
+      @JsonProperty("dynamicPipeline") boolean isDynamicPipeline,
+      @JsonProperty("chatProfiles") PipelineChatProfilesSection chatProfiles) {
     this.name = name;
     this.inputContract = inputContract == null ? Map.of() : Map.copyOf(inputContract);
     this.variableRegistry = variableRegistry;
@@ -92,6 +96,7 @@ public final class PipelineDefinition implements org.olo.executiontree.config.Pi
     this.executionType = executionType != null ? executionType : "SYNC";
     this.isDebugPipeline = isDebugPipeline;
     this.isDynamicPipeline = isDynamicPipeline;
+    this.chatProfiles = chatProfiles;
   }
 
   public String getName() { return name; }
@@ -141,5 +146,10 @@ public final class PipelineDefinition implements org.olo.executiontree.config.Pi
   /** Whether this pipeline is marked as a dynamic pipeline in its config. */
   public boolean isDynamicPipeline() {
     return isDynamicPipeline;
+  }
+
+  /** Regional chat UI profiles from pipeline JSON; absent unless {@code chatProfiles} was set in the definition. */
+  public PipelineChatProfilesSection getChatProfiles() {
+    return chatProfiles;
   }
 }

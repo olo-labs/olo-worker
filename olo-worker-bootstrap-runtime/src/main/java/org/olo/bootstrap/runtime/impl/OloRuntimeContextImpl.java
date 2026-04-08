@@ -77,6 +77,7 @@ public final class OloRuntimeContextImpl implements OloRuntimeContext {
                 null,
                 def.getExecutionType() != null ? def.getExecutionType().name() : "SYNC",
                 def.isDebugPipeline(),
-                def.isDynamicPipeline());
+                def.isDynamicPipeline(),
+                def.getChatProfiles());
     }
 }

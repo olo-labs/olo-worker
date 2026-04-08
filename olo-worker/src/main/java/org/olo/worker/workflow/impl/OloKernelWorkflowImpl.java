@@ -12,6 +12,8 @@ import io.temporal.workflow.Workflow;
 import io.temporal.workflow.WorkflowInfo;
 
 import java.time.Duration;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -24,6 +26,9 @@ public class OloKernelWorkflowImpl implements org.olo.worker.workflow.OloKernelW
     private static final Duration ACTIVITY_SCHEDULE_TO_CLOSE = Duration.ofMinutes(5);
     private static final Duration ACTIVITY_NO_TIMEOUT_DEBUG = Duration.ofDays(365);
     private static final String EXPENSIVE_ROUTING_PROMPT = "Use expensive routing (dynamic planner flow)?";
+    /** Shown in UI and persisted as user input; {@code message} matches {@code label} so clients send this text back. */
+    private static final String EXPENSIVE_ROUTING_OPT_YES = "Yes, use dynamic flow";
+    private static final String EXPENSIVE_ROUTING_OPT_NO = "No, direct response only";
 
     private boolean humanApproved;
     private String humanMessage;
@@ -55,10 +60,17 @@ public class OloKernelWorkflowImpl implements org.olo.worker.workflow.OloKernelW
         String userQuery = extractUserQuery(workflowInput);
         long sequenceNumber = 1L;
 
+        Map<String, Object> humanWaitInput = new LinkedHashMap<>();
+        humanWaitInput.put("message", EXPENSIVE_ROUTING_PROMPT);
+        humanWaitInput.put(
+                "options",
+                List.of(
+                        Map.of("label", EXPENSIVE_ROUTING_OPT_YES, "approved", true, "message", EXPENSIVE_ROUTING_OPT_YES),
+                        Map.of("label", EXPENSIVE_ROUTING_OPT_NO, "approved", false, "message", EXPENSIVE_ROUTING_OPT_NO)));
         activities.reportRunEvent(
                 runId, callbackBaseUrl, sequenceNumber++, correlationId,
                 "human-routing-gate", "root", "HUMAN", "WAITING",
-                Map.of("message", EXPENSIVE_ROUTING_PROMPT),
+                humanWaitInput,
                 Map.of("type", "USER_INPUT_REQUIRED", "taskId", "expensive-routing"),
                 Map.of("awaitingSignal", "humanInput"));
         Workflow.await(() -> humanMessage != null);
@@ -92,8 +104,10 @@ public class OloKernelWorkflowImpl implements org.olo.worker.workflow.OloKernelW
         }
 
         try {
-            String variableMapJson = WorkflowPlanExecutor.runPlan(
-                    planJson, untypedActivityStub, queueNameOrEmpty, workflowInputJson);
+            WorkflowPlanExecutor.PlanRunResult planRun = WorkflowPlanExecutor.runPlan(
+                    planJson, untypedActivityStub, activities,
+                    queueNameOrEmpty, workflowInputJson, runId, callbackBaseUrl, correlationId, sequenceNumber);
+            String variableMapJson = planRun.variableMapJson();
             String result = activities.applyResultMapping(planJson, variableMapJson);
             return result != null ? result : "";
         } catch (Exception e) {

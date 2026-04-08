@@ -66,6 +66,9 @@ public final class ConsensusSubtreeCreatorPlugin implements ExecutablePlugin {
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("variablesToInject", variablesToInject);
         out.put("steps", steps);
+        out.put("user_input", planText);
+        out.put("user_output", steps.size() + " planner step(s)");
+        out.put("user_message", "Consensus subtree: " + maxRounds + " round(s), " + steps.size() + " step(s)");
         return out;
     }
 

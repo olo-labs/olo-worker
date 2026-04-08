@@ -7,6 +7,7 @@ package org.olo.bootstrap.loader.context.impl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.olo.configuration.chat.PipelineChatProfilesSection;
 import org.olo.configuration.snapshot.CompositeConfigurationSnapshot;
 import org.olo.executiontree.CompiledPipeline;
 import org.olo.executiontree.ExecutionTreeCompiler;
@@ -140,6 +141,16 @@ public final class ExecutionTreeRegistry {
             dynamicPipeline = Boolean.parseBoolean(dynamicFlag.toString());
           }
 
+          PipelineChatProfilesSection chatProfiles = null;
+          Object chatRaw = root.get("chatProfiles");
+          if (chatRaw != null) {
+            try {
+              chatProfiles = MAPPER.convertValue(chatRaw, PipelineChatProfilesSection.class);
+            } catch (Exception pex) {
+              log.warn("Invalid chatProfiles for region={} pipelineId={}: {}", region, pipelineId, pex.getMessage());
+            }
+          }
+
           PipelineDefinition def = new PipelineDefinition(
               pipelineId,
               inputContract,
@@ -151,7 +162,8 @@ public final class ExecutionTreeRegistry {
               null,
               "SYNC",
               debugPipeline,
-              dynamicPipeline);
+              dynamicPipeline,
+              chatProfiles);
           compiled = new CompiledPipeline(pipelineId, version, checksum, def);
           newCompiledByChecksum.put(checksum, compiled);
         }
